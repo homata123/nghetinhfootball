@@ -241,6 +241,9 @@ function setupEventListeners() {
     // Player detail modal close button
     document.getElementById('close-player-detail').addEventListener('click', closeAllModals);
 
+    // Match detail modal close button
+    document.getElementById('close-match-detail').addEventListener('click', closeAllModals);
+
     // Team stats management
     elements.refreshTeamStatsBtn.addEventListener('click', () => {
         loadTeamStats();
@@ -1930,6 +1933,9 @@ function displayMatches(matches) {
                 <td class="match-description" title="${match.description || ''}">${match.description || '-'}</td>
                 ${currentUser ? `
                     <td class="match-actions">
+                        <button class="btn btn-primary btn-sm" onclick="viewMatchDetail('${match.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
                         <button class="btn btn-outline btn-sm" onclick="editMatch('${match.id}')">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -1937,7 +1943,13 @@ function displayMatches(matches) {
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
-                ` : ''}
+                ` : `
+                    <td class="match-actions">
+                        <button class="btn btn-primary btn-sm" onclick="viewMatchDetail('${match.id}')">
+                            <i class="fas fa-eye"></i> Xem Chi Tiết
+                        </button>
+                    </td>
+                `}
             </tr>
         `;
     }).join('');
@@ -2070,6 +2082,76 @@ function filterMatches() {
     loadMatches(1);
 }
 
+// Match Detail Functions
+async function viewMatchDetail(matchId) {
+    try {
+        showLoading(true);
+        const match = await apiCall(`/team/matches/${matchId}`);
+        showMatchDetailModal(match);
+    } catch (error) {
+        console.error('Error loading match detail:', error);
+        showToast('Có lỗi xảy ra khi tải thông tin trận đấu', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function showMatchDetailModal(match) {
+    // Update modal content with match data
+    document.getElementById('match-detail-our-score').textContent = match.our_score;
+    document.getElementById('match-detail-opponent').textContent = match.opponent_name;
+    document.getElementById('match-detail-opponent-score').textContent = match.opponent_score;
+
+    // Format match date and time
+    const matchDate = new Date(match.match_datetime);
+    document.getElementById('match-detail-date').textContent = matchDate.toLocaleDateString('vi-VN');
+    document.getElementById('match-detail-time').textContent = matchDate.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    // Determine result
+    let resultClass = '';
+    let resultText = '';
+    if (match.our_score > match.opponent_score) {
+        resultClass = 'win';
+        resultText = 'Thắng';
+    } else if (match.our_score < match.opponent_score) {
+        resultClass = 'loss';
+        resultText = 'Thua';
+    } else {
+        resultClass = 'draw';
+        resultText = 'Hòa';
+    }
+
+    // Update result elements
+    const resultElement = document.getElementById('match-detail-result-text');
+    resultElement.textContent = resultText;
+    resultElement.className = `match-result-badge ${resultClass}`;
+
+    document.getElementById('match-detail-result-detail').textContent = `${match.our_score} - ${match.opponent_score}`;
+
+    // Update status (assuming all matches are active)
+    const statusElement = document.getElementById('match-detail-status');
+    statusElement.textContent = 'Hoàn thành';
+    statusElement.className = 'status-badge active';
+
+    // Update description
+    const descriptionElement = document.getElementById('match-detail-description');
+    if (match.description && match.description.trim()) {
+        descriptionElement.textContent = match.description;
+    } else {
+        descriptionElement.textContent = 'Không có mô tả chi tiết về trận đấu này.';
+        descriptionElement.style.fontStyle = 'italic';
+        descriptionElement.style.color = 'var(--gray-500)';
+    }
+
+    // Show modal
+    document.getElementById('match-detail-modal').classList.add('active');
+    document.getElementById('match-detail-modal').style.display = 'flex';
+}
+
 // Make functions global for onclick attributes
 window.editMatch = editMatch;
 window.deleteMatch = deleteMatch;
+window.viewMatchDetail = viewMatchDetail;

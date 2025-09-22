@@ -627,6 +627,65 @@
         </div>
     </div>
 
+    <!-- Match Detail Modal -->
+    <div id="match-detail-modal" class="modal">
+        <div class="modal-content xlarge">
+            <div class="modal-header">
+                <h3 id="match-detail-title">Chi Tiết Trận Đấu</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="match-detail-content">
+                    <div class="match-detail-header">
+                        <div class="match-detail-score">
+                            <div class="team-info">
+                                <div class="team-name">FC Nghệ Tĩnh</div>
+                                <div class="team-score" id="match-detail-our-score">0</div>
+                            </div>
+                            <div class="vs-separator">VS</div>
+                            <div class="team-info">
+                                <div class="team-name" id="match-detail-opponent">Đối Thủ</div>
+                                <div class="team-score" id="match-detail-opponent-score">0</div>
+                            </div>
+                        </div>
+                        <div class="match-detail-result">
+                            <span id="match-detail-result-text" class="match-result-badge">-</span>
+                        </div>
+                    </div>
+
+                    <div class="match-detail-info">
+                        <div class="match-detail-grid">
+                            <div class="detail-item">
+                                <label>Ngày thi đấu:</label>
+                                <span id="match-detail-date">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Giờ thi đấu:</label>
+                                <span id="match-detail-time">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Kết quả:</label>
+                                <span id="match-detail-result-detail">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Trạng thái:</label>
+                                <span id="match-detail-status" class="status-badge">-</span>
+                            </div>
+                        </div>
+
+                        <div class="detail-item-full">
+                            <label>Mô tả trận đấu:</label>
+                            <div id="match-detail-description" class="match-description-detail">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-match-detail">Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Image Selector Modal -->
     <div id="image-selector-modal" class="modal">
         <div class="modal-content large">
