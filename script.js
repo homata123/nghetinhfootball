@@ -1097,10 +1097,10 @@ function showPostModal(post = null) {
 
     if (post) {
         title.textContent = 'Sửa Bài Viết';
-        form.title.value = post.title;
-        form.content.value = post.content;
-        form.author.value = post.author;
-        form.published.checked = post.published;
+        document.getElementById('post-title').value = post.title;
+        document.getElementById('post-content').value = post.content;
+        document.getElementById('post-author').value = post.author;
+        document.getElementById('post-published').checked = post.published;
 
         // Load existing images
         selectedImages = post.images || [];
