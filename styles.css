@@ -522,6 +522,147 @@ body {
     gap: var(--spacing-6);
 }
 
+/* Main Formation */
+.main-formation {
+    margin-top: var(--spacing-8);
+}
+
+.formation-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.position-row {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid;
+    margin-bottom: var(--spacing-4);
+}
+
+.position-title {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    margin-bottom: var(--spacing-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.players-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-3);
+    max-width: 100%;
+    justify-items: center;
+}
+
+/* Position-specific colors */
+.goalkeepers {
+    border-left-color: #f59e0b;
+    /* Yellow */
+}
+
+.goalkeepers .position-title {
+    color: #f59e0b;
+}
+
+.defenders {
+    border-left-color: #3b82f6;
+    /* Blue */
+}
+
+.defenders .position-title {
+    color: #3b82f6;
+}
+
+.midfielders {
+    border-left-color: #10b981;
+    /* Green */
+}
+
+.midfielders .position-title {
+    color: #10b981;
+}
+
+.forwards {
+    border-left-color: #ef4444;
+    /* Red */
+}
+
+.forwards .position-title {
+    color: #ef4444;
+}
+
+/* Formation player cards */
+.formation-container .player-card {
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    width: 200px;
+    margin: 0 auto;
+}
+
+.formation-container .player-image {
+    height: 180px;
+}
+
+.formation-container .player-info {
+    padding: var(--spacing-3);
+}
+
+.formation-container .player-name {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.formation-container .player-position {
+    font-size: var(--font-size-xs);
+    opacity: 0.8;
+}
+
+.empty-slot {
+    width: 200px;
+    height: 0;
+    visibility: hidden;
+}
+
+.goalkeepers .player-card {
+    border-color: #f59e0b;
+}
+
+.goalkeepers .player-card:hover {
+    border-color: #d97706;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+}
+
+.defenders .player-card {
+    border-color: #3b82f6;
+}
+
+.defenders .player-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+.midfielders .player-card {
+    border-color: #10b981;
+}
+
+.midfielders .player-card:hover {
+    border-color: #059669;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+}
+
+.forwards .player-card {
+    border-color: #ef4444;
+}
+
+.forwards .player-card:hover {
+    border-color: #dc2626;
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.2);
+}
+
 .players-preview {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -551,7 +692,7 @@ body {
 
 .player-image {
     width: 100%;
-    height: 200px;
+    height: 300px;
     object-fit: cover;
     background-color: var(--gray-200);
 }
@@ -798,6 +939,7 @@ body {
     justify-content: center;
     gap: var(--spacing-8);
     margin-bottom: var(--spacing-4);
+    position: relative;
 }
 
 .team-info {
@@ -805,6 +947,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-2);
+    min-width: 120px;
 }
 
 .team-name {
@@ -828,6 +971,9 @@ body {
 
 .match-detail-result {
     margin-top: var(--spacing-4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .match-result-badge {
@@ -1117,6 +1263,22 @@ body {
     .post-content-body {
         padding: var(--spacing-3);
     }
+
+    .player-image {
+        height: 200px;
+    }
+
+    .players-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .formation-container .player-card {
+        width: 140px;
+    }
+
+    .formation-container .player-image {
+        height: 130px;
+    }
 }
 
 .status-badge {
@@ -1157,6 +1319,10 @@ body {
     .player-photo {
         max-width: 200px;
         height: 250px;
+    }
+
+    .player-image {
+        height: 220px;
     }
 
     .player-detail-grid {
@@ -1716,6 +1882,28 @@ body {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
 
+    .formation-container {
+        gap: var(--spacing-4);
+    }
+
+    .position-row {
+        padding: var(--spacing-3);
+        margin-bottom: var(--spacing-3);
+    }
+
+    .players-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-2);
+    }
+
+    .formation-container .player-card {
+        width: 160px;
+    }
+
+    .formation-container .player-image {
+        height: 150px;
+    }
+
     .gallery-grid {
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
@@ -2106,9 +2294,7 @@ body {
     font-size: var(--font-size-lg);
 }
 
-.match-result {
-    /* Text alignment handled by table cell alignment */
-}
+/* Match result styling handled by table cell alignment */
 
 .match-result.win {
     color: var(--success-color);

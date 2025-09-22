@@ -30,7 +30,7 @@ const elements = {
     // Home section
     totalPlayers: document.getElementById('total-players'),
     totalGoals: document.getElementById('total-goals'),
-    totalPosts: document.getElementById('total-posts'),
+    daysSinceFounding: document.getElementById('days-since-founding'),
     recentPosts: document.getElementById('recent-posts'),
     playersPreview: document.getElementById('players-preview'),
 
@@ -568,7 +568,18 @@ async function loadHomeData() {
         // Update stats
         elements.totalPlayers.textContent = players.length;
         elements.totalGoals.textContent = players.reduce((sum, player) => sum + (player.scored_goals || 0), 0);
-        elements.totalPosts.textContent = posts.length;
+
+        // Calculate days since founding
+        const teamStats = await loadTeamStats();
+        if (teamStats && teamStats.date_founded) {
+            const foundingDate = new Date(teamStats.date_founded);
+            const today = new Date();
+            const timeDiff = today.getTime() - foundingDate.getTime();
+            const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+            elements.daysSinceFounding.textContent = daysDiff;
+        } else {
+            elements.daysSinceFounding.textContent = 'N/A';
+        }
 
         // Load recent posts
         displayRecentPosts(posts.slice(0, 6));
@@ -671,12 +682,73 @@ function displayRecentPosts(posts) {
 }
 
 function displayPlayersPreview(players) {
-    elements.playersPreview.innerHTML = '';
+    // Separate players by position
+    const goalkeepers = players.filter(player => player.position === 'Goalkeeper' || player.position === 'Thủ môn');
+    const defenders = players.filter(player => player.position === 'Defender' || player.position === 'Hậu vệ');
+    const midfielders = players.filter(player => player.position === 'Midfielder' || player.position === 'Tiền vệ');
+    const forwards = players.filter(player => player.position === 'Forward' || player.position === 'Tiền đạo');
 
-    players.forEach(player => {
+    // Display formation players
+    displayFormationPlayers(goalkeepers, 'goalkeepers-row');
+    displayFormationPlayers(defenders, 'defenders-row');
+    displayFormationPlayers(midfielders, 'midfielders-row');
+    displayFormationPlayers(forwards, 'forwards-row');
+
+    // Display remaining players in preview section
+    const remainingPlayers = players.filter(player =>
+        !['Goalkeeper', 'Thủ môn', 'Defender', 'Hậu vệ', 'Midfielder', 'Tiền vệ', 'Forward', 'Tiền đạo'].includes(player.position)
+    );
+
+    elements.playersPreview.innerHTML = '';
+    remainingPlayers.forEach(player => {
         const playerCard = createPlayerPreviewCard(player);
         elements.playersPreview.appendChild(playerCard);
     });
+}
+
+function displayFormationPlayers(players, containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.innerHTML = '';
+
+        // Sort players by number or name for consistent ordering
+        const sortedPlayers = players.sort((a, b) => {
+            if (a.number && b.number) {
+                return parseInt(a.number) - parseInt(b.number);
+            }
+            return (a.fullname || a.name || '').localeCompare(b.fullname || b.name || '');
+        });
+
+        // Create rows with max 4 players each
+        const maxPlayersPerRow = 4;
+        const rows = [];
+
+        for (let i = 0; i < sortedPlayers.length; i += maxPlayersPerRow) {
+            const rowPlayers = sortedPlayers.slice(i, i + maxPlayersPerRow);
+            rows.push(rowPlayers);
+        }
+
+        // Create HTML for each row
+        rows.forEach(rowPlayers => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'players-row';
+
+            rowPlayers.forEach(player => {
+                const playerCard = createPlayerPreviewCard(player);
+                rowDiv.appendChild(playerCard);
+            });
+
+            // Fill empty slots if needed
+            const emptySlots = maxPlayersPerRow - rowPlayers.length;
+            for (let i = 0; i < emptySlots; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-slot';
+                rowDiv.appendChild(emptyDiv);
+            }
+
+            container.appendChild(rowDiv);
+        });
+    }
 }
 
 function displayPlayers(players) {
@@ -1772,9 +1844,11 @@ async function loadTeamStats() {
     try {
         const teamStats = await apiCall('/team/stats');
         displayTeamStats(teamStats);
+        return teamStats; // Return the data for use in other functions
     } catch (error) {
         console.error('Error loading team stats:', error);
         showToast('Có lỗi xảy ra khi tải thống kê đội bóng', 'error');
+        return null; // Return null on error
     }
 }
 
