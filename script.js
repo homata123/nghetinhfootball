@@ -572,7 +572,7 @@ async function loadHomeData() {
         const teamStats = await loadTeamStats(false);
 
         // Update stats
-        elements.totalPlayers.textContent = players.length;
+        elements.totalPlayers.textContent = teamStats ? (teamStats.number_of_players || 0) : 0;
         elements.totalGoals.textContent = teamStats ? (teamStats.total_goals || 0) : 0;
 
         // Calculate days since founding
