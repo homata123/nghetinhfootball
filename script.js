@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://homatabe.onrender.com';
+const API_BASE_URL = 'http://localhost:8000';
 const LOGIN_ENDPOINT = '/auth/login';
 
 // Global State
@@ -243,6 +243,9 @@ function setupEventListeners() {
 
     // Match detail modal close button
     document.getElementById('close-match-detail').addEventListener('click', closeAllModals);
+
+    // Post detail modal close button
+    document.getElementById('close-post-detail').addEventListener('click', closeAllModals);
 
     // Team stats management
     elements.refreshTeamStatsBtn.addEventListener('click', () => {
@@ -811,6 +814,13 @@ function createPlayerPreviewCard(player) {
 function createPostCard(post) {
     const card = document.createElement('div');
     card.className = 'post-card';
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', (e) => {
+        // Don't trigger if clicking on action buttons
+        if (!e.target.closest('.post-actions')) {
+            viewPostDetail(post.id);
+        }
+    });
 
     const hasImage = post.images && post.images[0];
     const imageHtml = hasImage ?
@@ -2151,7 +2161,69 @@ function showMatchDetailModal(match) {
     document.getElementById('match-detail-modal').style.display = 'flex';
 }
 
+// Post Detail Functions
+async function viewPostDetail(postId) {
+    try {
+        showLoading(true);
+        const post = await apiCall(`/team/posts/${postId}`);
+        showPostDetailModal(post);
+    } catch (error) {
+        console.error('Error loading post detail:', error);
+        showToast('Có lỗi xảy ra khi tải bài viết', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function showPostDetailModal(post) {
+    // Update modal content with post data
+    document.getElementById('post-detail-title').textContent = post.title;
+    document.getElementById('post-detail-author').textContent = post.author;
+
+    // Format post date
+    const postDate = new Date(post.published_at || post.created_at);
+    document.getElementById('post-detail-date').textContent = postDate.toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    // Update featured image
+    const featuredImageContainer = document.getElementById('post-detail-featured-image');
+    if (post.images && post.images[0]) {
+        featuredImageContainer.innerHTML = `<img src="${post.images[0]}" alt="${post.title}" style="width: 100%; height: 400px; object-fit: cover;">`;
+    } else {
+        featuredImageContainer.innerHTML = `
+            <div style="width: 100%; height: 400px; background: linear-gradient(135deg, #1e3a8a, #1e40af); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
+                <i class="fas fa-newspaper"></i>
+            </div>
+        `;
+    }
+
+    // Update post content
+    const contentElement = document.getElementById('post-detail-content');
+    contentElement.innerHTML = post.content;
+
+    // Update additional images gallery
+    const galleryContainer = document.getElementById('post-detail-gallery');
+    if (post.images && post.images.length > 1) {
+        const additionalImages = post.images.slice(1);
+        galleryContainer.innerHTML = additionalImages.map(image =>
+            `<img src="${image}" alt="Hình ảnh bài viết" onclick="openImageModal('${image}')">`
+        ).join('');
+    } else {
+        galleryContainer.innerHTML = '';
+    }
+
+    // Show modal
+    document.getElementById('post-detail-modal').classList.add('active');
+    document.getElementById('post-detail-modal').style.display = 'flex';
+}
+
 // Make functions global for onclick attributes
 window.editMatch = editMatch;
 window.deleteMatch = deleteMatch;
 window.viewMatchDetail = viewMatchDetail;
+window.viewPostDetail = viewPostDetail;
