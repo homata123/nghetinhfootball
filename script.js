@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://homatabe.onrender.com';
 const LOGIN_ENDPOINT = '/auth/login';
 
 // Global State
