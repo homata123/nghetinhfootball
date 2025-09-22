@@ -247,6 +247,9 @@ function setupEventListeners() {
     // Post detail modal close button
     document.getElementById('close-post-detail').addEventListener('click', closeAllModals);
 
+    // Image viewer modal close button
+    document.getElementById('close-image-viewer').addEventListener('click', closeAllModals);
+
     // Team stats management
     elements.refreshTeamStatsBtn.addEventListener('click', () => {
         loadTeamStats();
@@ -949,6 +952,8 @@ function createGalleryItem(image) {
     item.dataset.uploadedAt = image.uploaded_at || new Date().toISOString();
     item.dataset.name = image.original_name || '';
     item.dataset.size = image.file_size || 0;
+    item.dataset.imageId = image.id;
+    item.dataset.imagePath = image.path;
 
     console.log('Created div element with class gallery-item');
 
@@ -964,13 +969,12 @@ function createGalleryItem(image) {
         imagePath: image.path
     });
 
-    // Create image element directly instead of innerHTML
+    // Create image element
     const img = document.createElement('img');
     img.src = imageSrc;
     img.alt = imageAlt;
-    img.style.cursor = 'pointer';
     img.style.width = '100%';
-    img.style.height = '150px';
+    img.style.height = '200px';
     img.style.objectFit = 'cover';
     img.style.display = 'block';
     img.style.borderRadius = 'var(--radius-lg)';
@@ -982,7 +986,7 @@ function createGalleryItem(image) {
         // Show placeholder
         const placeholder = document.createElement('div');
         placeholder.style.width = '100%';
-        placeholder.style.height = '150px';
+        placeholder.style.height = '200px';
         placeholder.style.backgroundColor = '#f3f4f6';
         placeholder.style.display = 'flex';
         placeholder.style.alignItems = 'center';
@@ -996,22 +1000,20 @@ function createGalleryItem(image) {
         console.log('Image loaded successfully:', imageSrc);
     };
 
-    // Create overlay
+    // Create overlay with eye icon
     const overlay = document.createElement('div');
-    overlay.className = 'overlay';
+    overlay.className = 'gallery-item-overlay';
+    overlay.innerHTML = '<i class="fas fa-eye eye-icon"></i>';
 
+    // Add click event to open image viewer
+    overlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openImageViewer(image);
+    });
+
+    // Create info section
     const info = document.createElement('div');
     info.className = 'info';
-
-    const nameP = document.createElement('p');
-    nameP.textContent = imageAlt;
-
-    const sizeP = document.createElement('p');
-    sizeP.textContent = fileSize;
-
-    info.appendChild(nameP);
-    info.appendChild(sizeP);
-    overlay.appendChild(info);
 
     // Append elements to item
     item.appendChild(img);
@@ -1019,17 +1021,6 @@ function createGalleryItem(image) {
 
     console.log('Elements appended to item');
 
-    // Add click event listener to the entire item
-    item.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Gallery item clicked:', image);
-        selectImage(image.id, image.path);
-    });
-
-    console.log('Gallery item created successfully');
-    console.log('Final item HTML:', item.outerHTML);
-    console.log('Item children count:', item.children.length);
     return item;
 }
 
@@ -2296,8 +2287,29 @@ function showPostDetailModal(post) {
     document.getElementById('post-detail-modal').style.display = 'flex';
 }
 
+// Image Viewer Functions
+function openImageViewer(image) {
+    const modal = document.getElementById('image-viewer-modal');
+    const img = document.getElementById('image-viewer-img');
+    const name = document.getElementById('image-viewer-name');
+    const description = document.getElementById('image-viewer-description');
+
+    // Set image source (use original path, not thumbnail)
+    img.src = image.path || image.thumbnail;
+    img.alt = image.original_name || 'Gallery image';
+
+    // Set image details
+    name.textContent = image.original_name || 'Không có tên';
+    description.textContent = image.description || 'Không có mô tả';
+
+    // Show modal
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
 // Make functions global for onclick attributes
 window.editMatch = editMatch;
 window.deleteMatch = deleteMatch;
 window.viewMatchDetail = viewMatchDetail;
 window.viewPostDetail = viewPostDetail;
+window.openImageViewer = openImageViewer;

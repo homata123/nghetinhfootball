@@ -813,6 +813,30 @@
         <p>Đang tải...</p>
     </div>
 
+    <!-- Image Viewer Modal -->
+    <div id="image-viewer-modal" class="modal">
+        <div class="modal-content fullscreen">
+            <div class="modal-header">
+                <h3 id="image-viewer-title">Xem Ảnh</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="image-viewer-container">
+                    <img id="image-viewer-img" src="" alt="Ảnh xem chi tiết" class="viewer-image">
+                    <div class="image-viewer-info">
+                        <div class="image-details">
+                            <h4 id="image-viewer-name">Tên ảnh</h4>
+                            <p id="image-viewer-description">Mô tả ảnh</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-image-viewer">Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
