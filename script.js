@@ -611,7 +611,7 @@ async function loadGallery(page = 1, pageSize = 20) {
         console.log('loadGallery called with page:', page, 'pageSize:', pageSize);
         showLoading(true);
 
-        const response = await apiCall(`/football/admin/images?page=${page}&page_size=${pageSize}`);
+        const response = await apiCall(`/football/images?page=${page}&page_size=${pageSize}`);
         console.log('Gallery API response:', response);
 
         if (response && response.images && Array.isArray(response.images)) {
