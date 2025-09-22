@@ -568,12 +568,14 @@ async function loadHomeData() {
             apiCall('/team/posts?published_only=true')
         ]);
 
+        // Load team stats first (without displaying)
+        const teamStats = await loadTeamStats(false);
+
         // Update stats
         elements.totalPlayers.textContent = players.length;
-        elements.totalGoals.textContent = players.reduce((sum, player) => sum + (player.scored_goals || 0), 0);
+        elements.totalGoals.textContent = teamStats ? (teamStats.total_goals || 0) : 0;
 
         // Calculate days since founding
-        const teamStats = await loadTeamStats();
         if (teamStats && teamStats.date_founded) {
             const foundingDate = new Date(teamStats.date_founded);
             const today = new Date();
@@ -1831,14 +1833,18 @@ function showPlayerDetailModal(player) {
 window.loadPlayerDetail = loadPlayerDetail;
 
 // Team Stats Functions
-async function loadTeamStats() {
+async function loadTeamStats(display = true) {
     try {
         const teamStats = await apiCall('/team/stats');
-        displayTeamStats(teamStats);
+        if (display) {
+            displayTeamStats(teamStats);
+        }
         return teamStats; // Return the data for use in other functions
     } catch (error) {
         console.error('Error loading team stats:', error);
-        showToast('Có lỗi xảy ra khi tải thống kê đội bóng', 'error');
+        if (display) {
+            showToast('Có lỗi xảy ra khi tải thống kê đội bóng', 'error');
+        }
         return null; // Return null on error
     }
 }
