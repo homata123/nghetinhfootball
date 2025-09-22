@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://homatabe.onrender.com';
+const API_BASE_URL = 'http://localhost:8000';
 const LOGIN_ENDPOINT = '/auth/login';
 
 // Global State
@@ -8,6 +8,10 @@ let currentSection = 'home';
 let selectedImages = [];
 let editingPlayerId = null;
 let editingPostId = null;
+let editingMatchId = null;
+let currentMatchPage = 1;
+let currentMatchFilter = '';
+let currentMatchSearch = '';
 
 // DOM Elements
 const elements = {
@@ -46,17 +50,34 @@ const elements = {
     galleryGrid: document.getElementById('gallery-grid'),
     uploadImageBtn: document.getElementById('upload-image-btn'),
 
+    // Team stats section
+    teamStatsGrid: document.getElementById('team-stats-grid'),
+    refreshTeamStatsBtn: document.getElementById('refresh-team-stats-btn'),
+    updateTeamStatsBtn: document.getElementById('update-team-stats-btn'),
+
+    // Match history section
+    matchTableBody: document.getElementById('match-table-body'),
+    matchPagination: document.getElementById('match-pagination'),
+    matchSearch: document.getElementById('match-search'),
+    matchFilter: document.getElementById('match-filter'),
+    refreshMatchesBtn: document.getElementById('refresh-matches-btn'),
+    addMatchBtn: document.getElementById('add-match-btn'),
+
     // Modals
     loginModal: document.getElementById('login-modal'),
     playerModal: document.getElementById('player-modal'),
     postModal: document.getElementById('post-modal'),
     imageSelectorModal: document.getElementById('image-selector-modal'),
     playerDetailModal: document.getElementById('player-detail-modal'),
+    teamStatsModal: document.getElementById('team-stats-modal'),
+    matchModal: document.getElementById('match-modal'),
 
     // Forms
     loginForm: document.getElementById('login-form'),
     playerForm: document.getElementById('player-form'),
     postForm: document.getElementById('post-form'),
+    teamStatsForm: document.getElementById('team-stats-form'),
+    matchForm: document.getElementById('match-form'),
 
     // Loading
     loadingOverlay: document.getElementById('loading-overlay'),
@@ -80,6 +101,10 @@ function initializeApp() {
 
     // Setup navigation
     setupNavigation();
+
+    // Load team stats and matches
+    loadTeamStats();
+    loadMatches();
 }
 
 function setupEventListeners() {
@@ -215,6 +240,26 @@ function setupEventListeners() {
 
     // Player detail modal close button
     document.getElementById('close-player-detail').addEventListener('click', closeAllModals);
+
+    // Team stats management
+    elements.refreshTeamStatsBtn.addEventListener('click', () => {
+        loadTeamStats();
+        showToast('Đã làm mới thống kê đội bóng', 'success');
+    });
+    elements.updateTeamStatsBtn.addEventListener('click', showTeamStatsModal);
+    elements.teamStatsForm.addEventListener('submit', handleTeamStatsSubmit);
+    document.getElementById('cancel-team-stats').addEventListener('click', closeAllModals);
+
+    // Match management
+    elements.refreshMatchesBtn.addEventListener('click', () => {
+        loadMatches();
+        showToast('Đã làm mới danh sách trận đấu', 'success');
+    });
+    elements.addMatchBtn.addEventListener('click', () => showMatchModal());
+    elements.matchForm.addEventListener('submit', handleMatchSubmit);
+    document.getElementById('cancel-match').addEventListener('click', closeAllModals);
+    elements.matchSearch.addEventListener('input', debounce(filterMatches, 300));
+    elements.matchFilter.addEventListener('change', filterMatches);
 }
 
 function setupNavigation() {
@@ -497,7 +542,9 @@ async function loadInitialData() {
         await Promise.all([
             loadHomeData(),
             loadPlayers(),
-            loadPosts()
+            loadPosts(),
+            loadTeamStats(),
+            loadMatches()
         ]);
     } catch (error) {
         console.error('Error loading initial data:', error);
@@ -931,6 +978,10 @@ function showPlayerModal(player = null) {
         if (assistsField) assistsField.value = player.assists || 0;
         if (joinedField) joinedField.value = player.joined_date ? player.joined_date.split('T')[0] : '';
 
+        // Set description field
+        const descriptionField = document.getElementById('player-description');
+        if (descriptionField) descriptionField.value = player.description || '';
+
         // Load existing images
         selectedImages = player.images || [];
         updateSelectedImages('selected-images');
@@ -961,6 +1012,7 @@ async function handlePlayerSubmit(e) {
         assists: parseInt(document.getElementById('player-assists').value) || 0,
         active_status: true,
         joined_date: document.getElementById('player-joined').value + 'T00:00:00+07:00',
+        description: document.getElementById('player-description').value || '',
         images: selectedImages
     };
 
@@ -1671,6 +1723,18 @@ function showPlayerDetailModal(player) {
         statusElement.className = 'status-badge inactive';
     }
 
+    // Update description
+    const descriptionElement = document.getElementById('player-detail-description');
+    if (descriptionElement) {
+        if (player.description && player.description.trim()) {
+            descriptionElement.textContent = player.description;
+        } else {
+            descriptionElement.textContent = 'Chưa có mô tả';
+            descriptionElement.style.fontStyle = 'italic';
+            descriptionElement.style.color = 'var(--gray-500)';
+        }
+    }
+
     // Update player photo
     const photoElement = document.getElementById('player-detail-photo');
     if (player.images && player.images.length > 0) {
@@ -1689,3 +1753,323 @@ function showPlayerDetailModal(player) {
 
 // Make functions global for onclick attributes
 window.loadPlayerDetail = loadPlayerDetail;
+
+// Team Stats Functions
+async function loadTeamStats() {
+    try {
+        const teamStats = await apiCall('/team/stats');
+        displayTeamStats(teamStats);
+    } catch (error) {
+        console.error('Error loading team stats:', error);
+        showToast('Có lỗi xảy ra khi tải thống kê đội bóng', 'error');
+    }
+}
+
+function displayTeamStats(stats) {
+    if (!stats) {
+        elements.teamStatsGrid.innerHTML = '<div class="match-empty-state"><i class="fas fa-chart-line"></i><h3>Chưa có thống kê</h3><p>Thống kê đội bóng sẽ được hiển thị ở đây</p></div>';
+        return;
+    }
+
+    const foundedDate = new Date(stats.date_founded).toLocaleDateString('vi-VN');
+    const latestMatch = stats.latest_match_time ?
+        new Date(stats.latest_match_time).toLocaleDateString('vi-VN') : 'Chưa có';
+
+    elements.teamStatsGrid.innerHTML = `
+        <div class="team-stat-card">
+            <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div class="stat-number">${foundedDate}</div>
+            <div class="stat-label">Ngày Thành Lập</div>
+        </div>
+        <div class="team-stat-card">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-number">${stats.number_of_players || 0}</div>
+            <div class="stat-label">Số Cầu Thủ</div>
+        </div>
+        <div class="team-stat-card">
+            <div class="stat-icon"><i class="fas fa-futbol"></i></div>
+            <div class="stat-number">${stats.total_goals || 0}</div>
+            <div class="stat-label">Tổng Bàn Thắng</div>
+        </div>
+        <div class="team-stat-card">
+            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+            <div class="stat-number">${stats.total_matches || 0}</div>
+            <div class="stat-label">Tổng Trận Đấu</div>
+        </div>
+        <div class="team-stat-card">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-number">${latestMatch}</div>
+            <div class="stat-label">Trận Gần Nhất</div>
+        </div>
+    `;
+}
+
+function showTeamStatsModal() {
+    elements.teamStatsModal.classList.add('active');
+    elements.teamStatsModal.style.display = 'flex';
+
+    // Load current stats into form
+    loadTeamStats().then(() => {
+        // This will be populated when we get the current stats
+    });
+}
+
+async function handleTeamStatsSubmit(e) {
+    e.preventDefault();
+
+    const formData = {
+        date_founded: document.getElementById('team-date-founded').value + 'T00:00:00Z',
+        number_of_players: parseInt(document.getElementById('team-players-count').value),
+        total_goals: parseInt(document.getElementById('team-total-goals').value),
+        total_matches: parseInt(document.getElementById('team-total-matches').value),
+        latest_match_time: document.getElementById('team-latest-match').value ?
+            new Date(document.getElementById('team-latest-match').value).toISOString() : null
+    };
+
+    try {
+        showLoading(true);
+
+        // Try to update existing stats first
+        try {
+            await apiCall('/team/admin/stats', {
+                method: 'PUT',
+                body: JSON.stringify(formData)
+            });
+            showToast('Cập nhật thống kê đội bóng thành công!', 'success');
+        } catch (error) {
+            // If update fails, try to create new stats
+            if (error.message.includes('404')) {
+                await apiCall('/team/admin/stats', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+                showToast('Tạo thống kê đội bóng thành công!', 'success');
+            } else {
+                throw error;
+            }
+        }
+
+        closeAllModals();
+        loadTeamStats();
+    } catch (error) {
+        console.error('Error saving team stats:', error);
+        showToast('Có lỗi xảy ra khi lưu thống kê đội bóng', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Match History Functions
+async function loadMatches(page = 1, limit = 10) {
+    try {
+        showLoading(true);
+        currentMatchPage = page;
+
+        let url = `/team/matches?page=${page}&limit=${limit}&sort_by=match_datetime&sort_order=desc`;
+
+        if (currentMatchFilter) {
+            const isWin = currentMatchFilter === 'win';
+            url += `&is_win=${isWin}`;
+        }
+
+        const response = await apiCall(url);
+        displayMatches(response.matches || []);
+        updateMatchPagination(response.pagination);
+    } catch (error) {
+        console.error('Error loading matches:', error);
+        showToast('Có lỗi xảy ra khi tải danh sách trận đấu', 'error');
+        displayMatches([]);
+    } finally {
+        showLoading(false);
+    }
+}
+
+function displayMatches(matches) {
+    if (!matches || matches.length === 0) {
+        elements.matchTableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="match-empty-state">
+                    <i class="fas fa-futbol"></i>
+                    <h3>Chưa có trận đấu nào</h3>
+                    <p>Lịch sử trận đấu sẽ được hiển thị ở đây</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    elements.matchTableBody.innerHTML = matches.map(match => {
+        const matchDate = new Date(match.match_datetime).toLocaleDateString('vi-VN');
+        const matchTime = new Date(match.match_datetime).toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        let resultClass = '';
+        let resultText = '';
+        if (match.our_score > match.opponent_score) {
+            resultClass = 'win';
+            resultText = 'Thắng';
+        } else if (match.our_score < match.opponent_score) {
+            resultClass = 'loss';
+            resultText = 'Thua';
+        } else {
+            resultClass = 'draw';
+            resultText = 'Hòa';
+        }
+
+        return `
+            <tr>
+                <td class="match-date">
+                    <div>${matchDate}</div>
+                    <div style="font-size: 0.8em; color: #666;">${matchTime}</div>
+                </td>
+                <td class="match-opponent">${match.opponent_name}</td>
+                <td class="match-score">${match.our_score} - ${match.opponent_score}</td>
+                <td class="match-result ${resultClass}">${resultText}</td>
+                <td class="match-description" title="${match.description || ''}">${match.description || '-'}</td>
+                ${currentUser ? `
+                    <td class="match-actions">
+                        <button class="btn btn-outline btn-sm" onclick="editMatch('${match.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteMatch('${match.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                ` : ''}
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateMatchPagination(pagination) {
+    if (!pagination) return;
+
+    const { page, total_pages, has_next, has_prev } = pagination;
+
+    elements.matchPagination.innerHTML = `
+        <div class="pagination-info">
+            Trang ${page} / ${total_pages}
+        </div>
+        <div class="pagination-controls">
+            <button class="btn btn-outline" ${!has_prev ? 'disabled' : ''} 
+                    onclick="loadMatches(${page - 1})">
+                <i class="fas fa-chevron-left"></i> Trước
+            </button>
+            <button class="btn btn-outline" ${!has_next ? 'disabled' : ''} 
+                    onclick="loadMatches(${page + 1})">
+                Sau <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    `;
+}
+
+function showMatchModal(match = null) {
+    editingMatchId = match ? match.id : null;
+
+    const modal = elements.matchModal;
+    const title = document.getElementById('match-modal-title');
+    const form = elements.matchForm;
+
+    if (match) {
+        title.textContent = 'Sửa Trận Đấu';
+
+        document.getElementById('match-opponent').value = match.opponent_name || '';
+        document.getElementById('match-datetime').value = match.match_datetime ?
+            new Date(match.match_datetime).toISOString().slice(0, 16) : '';
+        document.getElementById('match-our-score').value = match.our_score || 0;
+        document.getElementById('match-opponent-score').value = match.opponent_score || 0;
+        document.getElementById('match-description').value = match.description || '';
+    } else {
+        title.textContent = 'Thêm Trận Đấu';
+        form.reset();
+    }
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+async function handleMatchSubmit(e) {
+    e.preventDefault();
+
+    const formData = {
+        opponent_name: document.getElementById('match-opponent').value,
+        match_datetime: new Date(document.getElementById('match-datetime').value).toISOString(),
+        our_score: parseInt(document.getElementById('match-our-score').value),
+        opponent_score: parseInt(document.getElementById('match-opponent-score').value),
+        description: document.getElementById('match-description').value,
+        is_win: parseInt(document.getElementById('match-our-score').value) > parseInt(document.getElementById('match-opponent-score').value)
+    };
+
+    try {
+        showLoading(true);
+
+        if (editingMatchId) {
+            await apiCall(`/team/admin/matches/${editingMatchId}`, {
+                method: 'PUT',
+                body: JSON.stringify(formData)
+            });
+            showToast('Cập nhật trận đấu thành công!', 'success');
+        } else {
+            await apiCall('/team/admin/matches', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            showToast('Thêm trận đấu thành công!', 'success');
+        }
+
+        closeAllModals();
+        loadMatches(currentMatchPage);
+        loadTeamStats(); // Refresh team stats as they auto-update
+    } catch (error) {
+        console.error('Error saving match:', error);
+        showToast('Có lỗi xảy ra khi lưu trận đấu', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function editMatch(matchId) {
+    try {
+        const match = await apiCall(`/team/matches/${matchId}`);
+        showMatchModal(match);
+    } catch (error) {
+        console.error('Error loading match:', error);
+        showToast('Có lỗi xảy ra khi tải thông tin trận đấu', 'error');
+    }
+}
+
+async function deleteMatch(matchId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa trận đấu này?')) return;
+
+    try {
+        showLoading(true);
+        await apiCall(`/team/admin/matches/${matchId}`, {
+            method: 'DELETE'
+        });
+        showToast('Xóa trận đấu thành công!', 'success');
+        loadMatches(currentMatchPage);
+        loadTeamStats(); // Refresh team stats as they auto-update
+    } catch (error) {
+        console.error('Error deleting match:', error);
+        showToast('Có lỗi xảy ra khi xóa trận đấu', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function filterMatches() {
+    const searchTerm = elements.matchSearch.value.toLowerCase();
+    const filterValue = elements.matchFilter.value;
+
+    currentMatchSearch = searchTerm;
+    currentMatchFilter = filterValue;
+
+    // Reload matches with new filter
+    loadMatches(1);
+}
+
+// Make functions global for onclick attributes
+window.editMatch = editMatch;
+window.deleteMatch = deleteMatch;

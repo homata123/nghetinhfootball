@@ -99,6 +99,75 @@
                 </div>
             </div>
 
+            <!-- Team Stats Section -->
+            <div class="team-stats-section">
+                <div class="container">
+                    <div class="section-header">
+                        <h2>Thống Kê Đội Bóng</h2>
+                        <div class="header-actions">
+                            <button id="refresh-team-stats-btn" class="btn btn-outline">
+                                <i class="fas fa-sync-alt"></i> Làm Mới
+                            </button>
+                            <button id="update-team-stats-btn" class="btn btn-primary admin-only"
+                                style="display: none;">
+                                <i class="fas fa-edit"></i> Cập Nhật Thống Kê
+                            </button>
+                        </div>
+                    </div>
+                    <div class="team-stats-grid" id="team-stats-grid">
+                        <!-- Team stats will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Match History Section -->
+            <div class="match-history-section">
+                <div class="container">
+                    <div class="section-header">
+                        <h2>Lịch Sử Trận Đấu</h2>
+                        <div class="header-actions">
+                            <div class="search-box">
+                                <input type="text" id="match-search" placeholder="Tìm kiếm trận đấu...">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <select id="match-filter">
+                                <option value="">Tất cả trận đấu</option>
+                                <option value="win">Chỉ thắng</option>
+                                <option value="loss">Chỉ thua</option>
+                            </select>
+                            <button id="refresh-matches-btn" class="btn btn-outline">
+                                <i class="fas fa-sync-alt"></i> Làm Mới
+                            </button>
+                            <button id="add-match-btn" class="btn btn-primary admin-only" style="display: none;">
+                                <i class="fas fa-plus"></i> Thêm Trận Đấu
+                            </button>
+                        </div>
+                    </div>
+                    <div class="match-history-container">
+                        <div class="match-table-wrapper">
+                            <table class="match-table" id="match-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        <th>Đối Thủ</th>
+                                        <th>Tỷ Số</th>
+                                        <th>Kết Quả</th>
+                                        <th>Mô Tả</th>
+                                        <th class="admin-only" style="display: none;">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="match-table-body">
+                                    <!-- Matches will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="match-pagination" id="match-pagination">
+                            <!-- Pagination controls will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Recent Posts -->
             <div class="container">
                 <div class="section-header">
@@ -337,6 +406,11 @@
                         <input type="date" id="player-joined" required>
                     </div>
                     <div class="form-group">
+                        <label for="player-description">Mô tả cầu thủ</label>
+                        <textarea id="player-description" rows="3"
+                            placeholder="Mô tả ngắn gọn về cầu thủ..."></textarea>
+                    </div>
+                    <div class="form-group">
                         <label for="player-images">Hình ảnh</label>
                         <div class="image-selector">
                             <div class="image-buttons">
@@ -416,7 +490,7 @@
 
     <!-- Player Detail Modal -->
     <div id="player-detail-modal" class="modal">
-        <div class="modal-content large">
+        <div class="modal-content xlarge">
             <div class="modal-header">
                 <h3 id="player-detail-title">Chi Tiết Cầu Thủ</h3>
                 <span class="close">&times;</span>
@@ -461,11 +535,94 @@
                                 <span id="player-detail-status" class="status-badge">-</span>
                             </div>
                         </div>
+                        <div class="detail-item-full">
+                            <label>Mô tả:</label>
+                            <div id="player-detail-description" class="player-description">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="close-player-detail">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Stats Modal -->
+    <div id="team-stats-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="team-stats-modal-title">Cập Nhật Thống Kê Đội Bóng</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="team-stats-form">
+                    <div class="form-group">
+                        <label for="team-date-founded">Ngày thành lập</label>
+                        <input type="date" id="team-date-founded" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="team-players-count">Số lượng cầu thủ</label>
+                        <input type="number" id="team-players-count" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="team-total-goals">Tổng số bàn thắng</label>
+                        <input type="number" id="team-total-goals" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="team-total-matches">Tổng số trận đấu</label>
+                        <input type="number" id="team-total-matches" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="team-latest-match">Trận đấu gần nhất</label>
+                        <input type="datetime-local" id="team-latest-match">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-team-stats">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Modal -->
+    <div id="match-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="match-modal-title">Thêm Trận Đấu</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="match-form">
+                    <div class="form-group">
+                        <label for="match-opponent">Tên đối thủ</label>
+                        <input type="text" id="match-opponent" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="match-datetime">Ngày và giờ thi đấu</label>
+                        <input type="datetime-local" id="match-datetime" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="match-our-score">Bàn thắng của chúng ta</label>
+                            <input type="number" id="match-our-score" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="match-opponent-score">Bàn thắng đối thủ</label>
+                            <input type="number" id="match-opponent-score" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="match-description">Mô tả trận đấu</label>
+                        <textarea id="match-description" rows="3"
+                            placeholder="Mô tả ngắn gọn về trận đấu..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-match">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
