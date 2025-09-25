@@ -590,7 +590,7 @@ async function loadHomeData() {
         displayRecentPosts(posts.slice(0, 6));
 
         // Load players preview
-        displayPlayersPreview(players.slice(0, 8));
+        displayPlayersPreview(players);
     } catch (error) {
         console.error('Error loading home data:', error);
     }
@@ -687,11 +687,20 @@ function displayRecentPosts(posts) {
 }
 
 function displayPlayersPreview(players) {
+    console.log('Total players received:', players.length);
+
     // Separate players by position
     const goalkeepers = players.filter(player => player.position === 'Goalkeeper' || player.position === 'Thủ môn');
     const defenders = players.filter(player => player.position === 'Defender' || player.position === 'Hậu vệ');
     const midfielders = players.filter(player => player.position === 'Midfielder' || player.position === 'Tiền vệ');
     const forwards = players.filter(player => player.position === 'Forward' || player.position === 'Tiền đạo');
+
+    console.log('Players by position:', {
+        goalkeepers: goalkeepers.length,
+        defenders: defenders.length,
+        midfielders: midfielders.length,
+        forwards: forwards.length
+    });
 
     // Display formation players
     displayFormationPlayers(goalkeepers, 'goalkeepers-row');
@@ -713,6 +722,8 @@ function displayPlayersPreview(players) {
 
 function displayFormationPlayers(players, containerId) {
     const container = document.getElementById(containerId);
+    console.log(`Displaying ${players.length} players in ${containerId}`);
+
     if (container) {
         container.innerHTML = '';
 
@@ -726,33 +737,33 @@ function displayFormationPlayers(players, containerId) {
 
         // Create rows with max 4 players each
         const maxPlayersPerRow = 4;
-        const rows = [];
 
         for (let i = 0; i < sortedPlayers.length; i += maxPlayersPerRow) {
             const rowPlayers = sortedPlayers.slice(i, i + maxPlayersPerRow);
-            rows.push(rowPlayers);
-        }
+            console.log(`Creating row ${Math.floor(i / maxPlayersPerRow) + 1} with ${rowPlayers.length} players`);
 
-        // Create HTML for each row
-        rows.forEach(rowPlayers => {
+            // Create a new row for each group of 4 players
             const rowDiv = document.createElement('div');
             rowDiv.className = 'players-row';
 
+            // Add players to this row
             rowPlayers.forEach(player => {
                 const playerCard = createPlayerPreviewCard(player);
                 rowDiv.appendChild(playerCard);
             });
 
-            // Fill empty slots if needed
+            // Fill empty slots if needed (for the last row)
             const emptySlots = maxPlayersPerRow - rowPlayers.length;
-            for (let i = 0; i < emptySlots; i++) {
+            for (let j = 0; j < emptySlots; j++) {
                 const emptyDiv = document.createElement('div');
                 emptyDiv.className = 'empty-slot';
                 rowDiv.appendChild(emptyDiv);
             }
 
             container.appendChild(rowDiv);
-        });
+        }
+
+        console.log(`Total rows created for ${containerId}:`, container.children.length);
     }
 }
 
