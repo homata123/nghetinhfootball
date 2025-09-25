@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://homatabe.onrender.com';
+const API_BASE_URL = 'https://homatabe-qx4o.onrender.com';
 const LOGIN_ENDPOINT = '/auth/login';
 
 // Global State
@@ -831,12 +831,18 @@ function createPlayerCard(player) {
     const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNDAiIGZpbGw9IiM5Q0E0QUYiLz4KPC9zdmc+';
     const playerImage = player.images && player.images[0] ? player.images[0] : defaultImage;
 
+    // Get main position and rating from points data
+    const mainPosition = player.points?.total_points?.main_position;
+    const mainRating = player.points?.total_points?.main_position_rating;
+    const pointsDisplay = mainPosition && mainRating ? `${mainPosition} - ${mainRating}` : '';
+
     card.innerHTML = `
         <div class="player-number">${player.number}</div>
         <img src="${playerImage}" alt="${player.fullname}" class="player-image" onerror="this.src='${defaultImage}'" />
         <div class="player-info">
             <h3 class="player-name">${player.fullname}</h3>
             <p class="player-position">${player.position}</p>
+            ${pointsDisplay ? `<div class="player-points-display">${pointsDisplay}</div>` : ''}
             <div class="player-stats">
                 <div class="stat">
                     <i class="fas fa-futbol"></i>
@@ -850,6 +856,9 @@ function createPlayerCard(player) {
             <div class="player-actions">
                 <button class="btn btn-primary btn-sm" onclick="loadPlayerDetail('${player.id}')">
                     <i class="fas fa-eye"></i> Xem Chi Tiết
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="viewPlayerPoints('${player.id}')">
+                    <i class="fas fa-chart-line"></i> Điểm Số
                 </button>
                 ${currentUser ? `
                     <button class="btn btn-outline btn-sm" onclick="editPlayer('${player.id}')">
@@ -872,15 +881,24 @@ function createPlayerPreviewCard(player) {
     const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNDAiIGZpbGw9IiM5Q0E0QUYiLz4KPC9zdmc+';
     const playerImage = player.images && player.images[0] ? player.images[0] : defaultImage;
 
+    // Get main position and rating from points data
+    const mainPosition = player.points?.total_points?.main_position;
+    const mainRating = player.points?.total_points?.main_position_rating;
+    const pointsDisplay = mainPosition && mainRating ? `${mainPosition} - ${mainRating}` : '';
+
     card.innerHTML = `
         <div class="player-number">${player.number}</div>
         <img src="${playerImage}" alt="${player.fullname}" class="player-image" onerror="this.src='${defaultImage}'" />
         <div class="player-info">
             <h3 class="player-name">${player.fullname}</h3>
             <p class="player-position">${player.position}</p>
+            ${pointsDisplay ? `<div class="player-points-display">${pointsDisplay}</div>` : ''}
             <div class="player-actions">
                 <button class="btn btn-primary btn-sm" onclick="loadPlayerDetail('${player.id}')">
                     <i class="fas fa-eye"></i> Xem Chi Tiết
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="viewPlayerPoints('${player.id}')">
+                    <i class="fas fa-chart-line"></i> Điểm Số
                 </button>
             </div>
         </div>
@@ -1778,6 +1796,9 @@ async function loadPlayerDetail(playerId) {
 }
 
 function showPlayerDetailModal(player) {
+    // Store player ID in modal dataset for later use
+    document.getElementById('player-detail-modal').dataset.playerId = player.id;
+
     // Update modal content with player data
     document.getElementById('player-detail-name').textContent = player.fullname;
     document.getElementById('player-detail-number').textContent = `#${player.number}`;
@@ -1786,6 +1807,19 @@ function showPlayerDetailModal(player) {
     document.getElementById('player-detail-hometown').textContent = player.hometown_address;
     document.getElementById('player-detail-goals').textContent = player.scored_goals;
     document.getElementById('player-detail-assists').textContent = player.assists;
+
+    // Update main position and rating display
+    const mainPosition = player.points?.total_points?.main_position;
+    const mainRating = player.points?.total_points?.main_position_rating;
+    const pointsContainer = document.getElementById('player-detail-points-container');
+    const pointsElement = document.getElementById('player-detail-points');
+
+    if (mainPosition && mainRating) {
+        pointsElement.textContent = `${mainPosition} - ${mainRating}`;
+        pointsContainer.style.display = 'block';
+    } else {
+        pointsContainer.style.display = 'none';
+    }
 
     // Format joined date
     const joinedDate = new Date(player.joined_date);
@@ -2319,3 +2353,555 @@ window.deleteMatch = deleteMatch;
 window.viewMatchDetail = viewMatchDetail;
 window.viewPostDetail = viewPostDetail;
 window.openImageViewer = openImageViewer;
+window.viewPlayerPoints = viewPlayerPoints;
+
+// Player Points System
+let currentPlayerForPoints = null;
+
+// Attribute mappings based on API documentation
+const ATTRIBUTE_MAPPINGS = {
+    // Physical Attributes
+    physical: {
+        strength: { name: 'Sức mạnh', key: 'strength' },
+        acceleration: { name: 'Tăng tốc', key: 'acceleration' },
+        speed: { name: 'Tốc độ', key: 'speed' },
+        stamina: { name: 'Thể lực', key: 'stamina' },
+        jumping: { name: 'Nhảy', key: 'jumping' },
+        balance: { name: 'Thăng bằng', key: 'balance' }
+    },
+    // Technical Attributes
+    technical: {
+        dribbling: { name: 'Rê bóng', key: 'dribbling' },
+        ball_control: { name: 'Giữ bóng', key: 'ball_control' },
+        short_passing: { name: 'Ch.ngắn', key: 'short_passing' },
+        long_passing: { name: 'Ch.dài', key: 'long_passing' },
+        crossing: { name: 'Tạt bóng', key: 'crossing' },
+        vision: { name: 'Tầm nhìn', key: 'vision' },
+        agility: { name: 'Khéo léo', key: 'agility' }
+    },
+    // Shooting Attributes
+    shooting: {
+        finishing: { name: 'Dứt điểm', key: 'finishing' },
+        shot_power: { name: 'Lực sút', key: 'shot_power' },
+        heading: { name: 'Đánh đầu', key: 'heading' },
+        long_shots: { name: 'Sút xa', key: 'long_shots' },
+        volleys: { name: 'Vô-lê', key: 'volleys' },
+        penalties: { name: 'Penalty', key: 'penalties' },
+        free_kick: { name: 'Đá phạt', key: 'free_kick' },
+        curve: { name: 'Sút xoáy', key: 'curve' }
+    },
+    // Mental Attributes
+    mental: {
+        positioning: { name: 'Chọn vị trí', key: 'positioning' },
+        reactions: { name: 'Phản ứng', key: 'reactions' },
+        composure: { name: 'Bình tĩnh', key: 'composure' },
+        aggression: { name: 'Quyết đoán', key: 'aggression' }
+    },
+    // Defensive Attributes
+    defensive: {
+        marking: { name: 'Kèm người', key: 'marking' },
+        standing_tackle: { name: 'Lấy bóng', key: 'standing_tackle' },
+        sliding_tackle: { name: 'Cắt bóng', key: 'sliding_tackle' },
+        interceptions: { name: 'Xoạc bóng', key: 'interceptions' }
+    },
+    // Goalkeeper Attributes
+    goalkeeper: {
+        gk_diving: { name: 'TM đổ người', key: 'gk_diving' },
+        gk_handling: { name: 'TM bắt bóng', key: 'gk_handling' },
+        gk_kicking: { name: 'TM phát bóng', key: 'gk_kicking' },
+        gk_reflexes: { name: 'TM phản xạ', key: 'gk_reflexes' },
+        gk_positioning: { name: 'TM chọn vị trí', key: 'gk_positioning' }
+    }
+};
+
+// Position mappings
+const POSITION_MAPPINGS = {
+    'ST': 'Tiền đạo',
+    'CF': 'Tiền đạo cắm',
+    'LW': 'Tiền vệ cánh trái',
+    'RW': 'Tiền vệ cánh phải',
+    'CAM': 'Tiền vệ tấn công',
+    'CM': 'Tiền vệ trung tâm',
+    'CDM': 'Tiền vệ phòng ngự',
+    'LM': 'Tiền vệ trái',
+    'RM': 'Tiền vệ phải',
+    'LWB': 'Hậu vệ cánh trái',
+    'RWB': 'Hậu vệ cánh phải',
+    'LB': 'Hậu vệ trái',
+    'RB': 'Hậu vệ phải',
+    'CB': 'Trung vệ',
+    'GK': 'Thủ môn'
+};
+
+async function viewPlayerPoints(playerId) {
+    try {
+        showLoading(true);
+        const player = await apiCall(`/football/footballers/${playerId}`);
+        currentPlayerForPoints = player;
+        showPlayerPointsModal(player);
+    } catch (error) {
+        console.error('Error loading player points:', error);
+        showToast('Có lỗi xảy ra khi tải điểm số cầu thủ', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function showPlayerPointsModal(player) {
+    // Update player header
+    document.getElementById('player-points-name').textContent = player.fullname;
+    document.getElementById('player-points-position').textContent = player.position;
+    document.getElementById('player-points-mvp-count').textContent = player.mvp_count || 0;
+
+    // Update player photo
+    const photoElement = document.getElementById('player-points-photo');
+    if (player.images && player.images.length > 0) {
+        photoElement.src = player.images[0];
+        photoElement.alt = player.fullname;
+    } else {
+        // Default placeholder image
+        photoElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjMwIiBmaWxsPSIjOUNBNEFGIi8+CjxzdmcgeD0iNDAiIHk9IjQwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAxMkMxNC4yMDkxIDEyIDE2IDEwLjIwOTEgMTYgOEMxNiA1Ljc5MDkgMTQuMjA5MSA0IDEyIDRDOS43OTA4NiA0IDggNS43OTA5IDggOEM4IDEwLjIwOTEgOS43OTA4NiAxMiAxMiAxMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0xMiAxNEM5Ljc5MDg2IDE0IDggMTUuNzkwOSA4IDE4SDE2QzE2IDE1Ljc5MDkgMTguMjA5MSAxNCAxNiAxNEgxMloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo8L3N2Zz4=';
+        photoElement.alt = 'Không có ảnh';
+    }
+
+    // Display points data
+    displayPlayerPoints(player);
+
+    // Show/hide edit button based on admin status
+    const editButton = document.getElementById('edit-player-points');
+    if (currentUser && currentUser.role === 'admin') {
+        editButton.style.display = 'inline-flex';
+        // Change button text based on whether player has points
+        if (player.points) {
+            editButton.innerHTML = '<i class="fas fa-edit"></i> Chỉnh Sửa Điểm';
+        } else {
+            editButton.innerHTML = '<i class="fas fa-plus"></i> Tạo Điểm Số';
+        }
+    } else {
+        editButton.style.display = 'none';
+    }
+
+    // Show modal
+    document.getElementById('player-points-modal').classList.add('active');
+    document.getElementById('player-points-modal').style.display = 'flex';
+}
+
+function displayPlayerPoints(player) {
+    // Safety check for null player
+    if (!player) {
+        console.error('displayPlayerPoints called with null player');
+        return;
+    }
+
+    const points = player.points;
+
+    // Always display the points board, even if points is null
+    // Display total points (will show empty state if null)
+    displayTotalPoints(points ? points.total_points : null);
+
+    // Display partial points (will show empty values if null)
+    displayPartialPoints(points ? points.partial_points : null);
+
+    // Display total attributes sum
+    const totalSum = points ? (points.attributes_sum || calculateTotalAttributesSum(points.partial_points)) : 0;
+    document.getElementById('total-attributes-sum').textContent = totalSum.toLocaleString();
+}
+
+
+function displayTotalPoints(totalPoints) {
+    const container = document.getElementById('total-points-grid');
+
+    let html = '';
+
+    // Main position
+    if (totalPoints && totalPoints.main_position && totalPoints.main_position_rating) {
+        const positionName = POSITION_MAPPINGS[totalPoints.main_position] || totalPoints.main_position;
+        html += `
+            <div class="total-point-item main-position">
+                <div class="total-point-position">${totalPoints.main_position} - ${positionName} (Chính)</div>
+                <div class="total-point-rating">${totalPoints.main_position_rating}</div>
+            </div>
+        `;
+    } else {
+        // Show placeholder for main position
+        html += `
+            <div class="total-point-item main-position empty">
+                <div class="total-point-position">Vị trí chính</div>
+                <div class="total-point-rating">-</div>
+            </div>
+        `;
+    }
+
+    // Alternative positions
+    if (totalPoints && totalPoints.alternative_positions && Array.isArray(totalPoints.alternative_positions)) {
+        totalPoints.alternative_positions.forEach(pos => {
+            if (pos.position && pos.rating) {
+                const positionName = POSITION_MAPPINGS[pos.position] || pos.position;
+                html += `
+                    <div class="total-point-item">
+                        <div class="total-point-position">${pos.position} - ${positionName}</div>
+                        <div class="total-point-rating">${pos.rating}</div>
+                    </div>
+                `;
+            }
+        });
+    } else {
+        // Show placeholder for alternative positions
+        html += `
+            <div class="total-point-item empty">
+                <div class="total-point-position">Vị trí phụ</div>
+                <div class="total-point-rating">-</div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+function displayPartialPoints(partialPoints) {
+    // Always display all categories, even if partialPoints is null
+    Object.keys(ATTRIBUTE_MAPPINGS).forEach(category => {
+        displayAttributeCategory(category, partialPoints);
+    });
+}
+
+function displayAttributeCategory(category, partialPoints) {
+    const container = document.getElementById(`${category}-attributes`);
+    const attributes = ATTRIBUTE_MAPPINGS[category];
+
+    let html = '';
+
+    Object.keys(attributes).forEach(attrKey => {
+        const attr = attributes[attrKey];
+        const value = partialPoints ? partialPoints[attr.key] : null;
+
+        // Always show the attribute, even if value is null/undefined
+        const displayValue = (value !== null && value !== undefined) ? value : '-';
+        const percentage = (value !== null && value !== undefined) ? Math.min((value / 150) * 100, 100) : 0;
+        const isEmpty = (value === null || value === undefined);
+
+        html += `
+            <div class="attribute-item ${category} ${isEmpty ? 'empty' : ''}">
+                <div class="attribute-name">${attr.name}</div>
+                <div class="attribute-value">
+                    <span class="${isEmpty ? 'empty-value' : ''}">${displayValue}</span>
+                    <div class="attribute-bar">
+                        <div class="attribute-bar-fill ${category}" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function calculateTotalAttributesSum(partialPoints) {
+    if (!partialPoints) return 0;
+
+    let sum = 0;
+    Object.values(ATTRIBUTE_MAPPINGS).forEach(category => {
+        Object.values(category).forEach(attr => {
+            const value = partialPoints[attr.key];
+            if (value !== null && value !== undefined) {
+                sum += value;
+            }
+        });
+    });
+
+    return sum;
+}
+
+// Edit Player Points Functions
+function openEditPlayerPointsModal(player) {
+    currentPlayerForPoints = player;
+
+    // Set modal title
+    document.getElementById('edit-player-points-title').textContent = `Chỉnh Sửa Điểm Số - ${player.fullname}`;
+
+    // Populate form with current data
+    populateEditForm(player);
+
+    // Show modal
+    const modal = document.getElementById('edit-player-points-modal');
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+function populateEditForm(player) {
+    const points = player.points;
+
+    // MVP Count
+    document.getElementById('edit-mvp-count').value = player.mvp_count || 0;
+
+    // Total Points
+    if (points && points.total_points) {
+        document.getElementById('edit-main-position').value = points.total_points.main_position || '';
+        document.getElementById('edit-main-position-rating').value = points.total_points.main_position_rating || 0;
+    } else {
+        document.getElementById('edit-main-position').value = '';
+        document.getElementById('edit-main-position-rating').value = 0;
+    }
+
+    // Partial Points - populate all attribute categories
+    Object.keys(ATTRIBUTE_MAPPINGS).forEach(category => {
+        populateAttributeCategory(category, points ? points.partial_points : null);
+    });
+}
+
+function populateAttributeCategory(category, partialPoints) {
+    const container = document.getElementById(`edit-${category}-attributes`);
+    const attributes = ATTRIBUTE_MAPPINGS[category];
+
+    let html = '';
+
+    Object.keys(attributes).forEach(attrKey => {
+        const attr = attributes[attrKey];
+        const value = partialPoints ? partialPoints[attr.key] : null;
+        const displayValue = (value !== null && value !== undefined) ? value : '';
+
+        html += `
+            <div class="attribute-edit-item">
+                <div class="attribute-edit-name">${attr.name}</div>
+                <input type="number" class="attribute-edit-input" 
+                       data-attribute="${attr.key}" 
+                       min="0" max="150" 
+                       value="${displayValue}"
+                       placeholder="0">
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+async function savePlayerPoints() {
+    if (!currentPlayerForPoints) return;
+
+    // Store player ID before making API calls to prevent null reference
+    const playerId = currentPlayerForPoints.id;
+
+    try {
+        showLoading(true);
+
+        // Collect form data
+        const mvpCount = parseInt(document.getElementById('edit-mvp-count').value) || 0;
+        const mainPosition = document.getElementById('edit-main-position').value;
+        const mainPositionRating = parseInt(document.getElementById('edit-main-position-rating').value) || 0;
+
+        // Validate required fields
+        if (!mainPosition) {
+            showToast('Vui lòng chọn vị trí chính', 'error');
+            return;
+        }
+
+        if (mainPositionRating <= 0) {
+            showToast('Vui lòng nhập điểm vị trí chính', 'error');
+            return;
+        }
+
+        // Collect partial points
+        const partialPoints = {};
+        Object.keys(ATTRIBUTE_MAPPINGS).forEach(category => {
+            const inputs = document.querySelectorAll(`#edit-${category}-attributes .attribute-edit-input`);
+            inputs.forEach(input => {
+                const value = parseInt(input.value);
+                if (value > 0) {
+                    partialPoints[input.dataset.attribute] = value;
+                }
+            });
+        });
+
+        // Check if at least some attributes are provided
+        if (Object.keys(partialPoints).length === 0) {
+            showToast('Vui lòng nhập ít nhất một thuộc tính', 'error');
+            return;
+        }
+
+        // Prepare API request data
+        const pointsData = {
+            partial_points: partialPoints,
+            total_points: {
+                main_position: mainPosition,
+                main_position_rating: mainPositionRating
+            }
+        };
+
+        // Make API call to update player points
+        let updatedPlayer;
+        try {
+            updatedPlayer = await apiCall(`/football/admin/footballers/${playerId}/points`, {
+                method: 'PUT',
+                body: JSON.stringify(pointsData)
+            });
+        } catch (pointsError) {
+            console.error('Error updating points:', pointsError);
+            throw pointsError;
+        }
+
+        // Update MVP count separately if it changed
+        if (mvpCount !== currentPlayerForPoints.mvp_count) {
+            try {
+                await apiCall(`/football/admin/footballers/${playerId}/mvp`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ mvp_count: mvpCount })
+                });
+            } catch (mvpError) {
+                console.error('Error updating MVP count:', mvpError);
+                // Don't throw here, as points update was successful
+                showToast('Điểm số đã được cập nhật, nhưng có lỗi khi cập nhật MVP', 'warning');
+            }
+        }
+
+        // Update local player data with the API response
+        if (updatedPlayer) {
+            currentPlayerForPoints = updatedPlayer;
+            // Ensure MVP count is updated from our form data
+            currentPlayerForPoints.mvp_count = mvpCount;
+        } else {
+            // If response is null, update the existing player data with our changes
+            if (currentPlayerForPoints) {
+                currentPlayerForPoints.mvp_count = mvpCount;
+                if (!currentPlayerForPoints.points) {
+                    currentPlayerForPoints.points = {};
+                }
+                currentPlayerForPoints.points.partial_points = partialPoints;
+                currentPlayerForPoints.points.total_points = {
+                    main_position: mainPosition,
+                    main_position_rating: mainPositionRating
+                };
+                currentPlayerForPoints.points.attributes_sum = calculateTotalAttributesSum(partialPoints);
+            }
+        }
+
+        showToast('Điểm số đã được cập nhật thành công!', 'success');
+
+        // Refresh the points display with the updated data BEFORE closing the modal
+        if (currentPlayerForPoints) {
+            displayPlayerPoints(currentPlayerForPoints);
+
+            // Update the modal header with updated data
+            document.getElementById('player-points-name').textContent = currentPlayerForPoints.fullname;
+            document.getElementById('player-points-position').textContent = currentPlayerForPoints.position;
+            document.getElementById('player-points-mvp-count').textContent = currentPlayerForPoints.mvp_count || 0;
+        }
+
+        // Close edit modal AFTER refreshing the display
+        closeEditPlayerPointsModal();
+
+        // Refresh the player list to show updated data in the main view
+        await loadPlayers();
+
+    } catch (error) {
+        console.error('Error saving player points:', error);
+        showToast('Có lỗi xảy ra khi lưu điểm số. Vui lòng thử lại.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function closeEditPlayerPointsModal() {
+    const modal = document.getElementById('edit-player-points-modal');
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    currentPlayerForPoints = null;
+}
+
+// Event listeners for edit modal
+document.addEventListener('DOMContentLoaded', function () {
+    // Edit player points button
+    const editPlayerPointsBtn = document.getElementById('edit-player-points');
+    if (editPlayerPointsBtn) {
+        editPlayerPointsBtn.addEventListener('click', function () {
+            if (currentPlayerForPoints) {
+                openEditPlayerPointsModal(currentPlayerForPoints);
+            }
+        });
+    }
+
+    // Save player points button
+    const savePlayerPointsBtn = document.getElementById('save-player-points');
+    if (savePlayerPointsBtn) {
+        savePlayerPointsBtn.addEventListener('click', savePlayerPoints);
+    }
+
+    // Cancel edit button
+    const cancelEditBtn = document.getElementById('cancel-edit-player-points');
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', closeEditPlayerPointsModal);
+    }
+
+    // Close edit modal when clicking outside or on close button
+    const editModal = document.getElementById('edit-player-points-modal');
+    if (editModal) {
+        editModal.addEventListener('click', function (e) {
+            if (e.target === editModal || e.target.classList.contains('close')) {
+                closeEditPlayerPointsModal();
+            }
+        });
+    }
+});
+
+// Top Rated Players Functions
+async function loadTopRatedPlayers(position = null, minRating = null, limit = 10) {
+    try {
+        showLoading(true);
+
+        let url = `/football/footballers/top-rated?limit=${limit}`;
+        if (position) {
+            url += `&position=${position}`;
+        }
+        if (minRating) {
+            url += `&min_rating=${minRating}`;
+        }
+
+        const players = await apiCall(url);
+        return players;
+    } catch (error) {
+        console.error('Error loading top rated players:', error);
+        showToast('Có lỗi xảy ra khi tải danh sách cầu thủ hàng đầu', 'error');
+        return [];
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function loadTopMVPPlayers(limit = 10) {
+    try {
+        showLoading(true);
+
+        const players = await apiCall(`/football/footballers/top-mvp?limit=${limit}`);
+        return players;
+    } catch (error) {
+        console.error('Error loading top MVP players:', error);
+        showToast('Có lỗi xảy ra khi tải danh sách cầu thủ MVP', 'error');
+        return [];
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Event listeners for player points modal
+document.addEventListener('DOMContentLoaded', function () {
+    // Close player points modal
+    document.getElementById('close-player-points').addEventListener('click', closeAllModals);
+
+    // View player points from player detail modal
+    document.getElementById('view-player-points').addEventListener('click', function () {
+        // Get the current player from the detail modal
+        const playerId = document.getElementById('player-detail-modal').dataset.playerId;
+        if (playerId) {
+            viewPlayerPoints(playerId);
+        }
+    });
+
+    // Edit player points (admin only)
+    document.getElementById('edit-player-points').addEventListener('click', function () {
+        if (currentPlayerForPoints) {
+            openEditPlayerPointsModal(currentPlayerForPoints);
+        }
+    });
+});
+
+// Make functions global for onclick attributes
+window.viewPlayerPoints = viewPlayerPoints;

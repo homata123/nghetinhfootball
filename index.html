@@ -553,6 +553,10 @@
                                 <label>Vị trí:</label>
                                 <span id="player-detail-position">-</span>
                             </div>
+                            <div class="detail-item" id="player-detail-points-container" style="display: none;">
+                                <label>Điểm tổng quát:</label>
+                                <span id="player-detail-points">-</span>
+                            </div>
                             <div class="detail-item">
                                 <label>Năm sinh:</label>
                                 <span id="player-detail-born-year">-</span>
@@ -586,6 +590,9 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="view-player-points">
+                    <i class="fas fa-chart-line"></i> Xem Điểm Số
+                </button>
                 <button type="button" class="btn btn-secondary" id="close-player-detail">Đóng</button>
             </div>
         </div>
@@ -833,6 +840,269 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="close-image-viewer">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Points Modal -->
+    <div id="player-points-modal" class="modal">
+        <div class="modal-content xlarge">
+            <div class="modal-header">
+                <h3 id="player-points-title">Bảng Điểm Cầu Thủ</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="player-points-container">
+                    <!-- Player Header -->
+                    <div class="player-points-header">
+                        <div class="player-points-info">
+                            <div class="player-points-name" id="player-points-name">Tên Cầu Thủ</div>
+                            <div class="player-points-position" id="player-points-position">Vị Trí</div>
+                            <div class="player-points-mvp" id="player-points-mvp">
+                                <i class="fas fa-trophy"></i>
+                                <span>MVP: <span id="player-points-mvp-count">0</span></span>
+                            </div>
+                        </div>
+                        <div class="player-points-image">
+                            <img id="player-points-photo" src="" alt="Ảnh cầu thủ" class="player-points-photo">
+                        </div>
+                    </div>
+
+                    <!-- Total Points Section -->
+                    <div class="points-section total-points-section">
+                        <h4 class="points-section-title">
+                            <i class="fas fa-star"></i>
+                            Điểm Tổng Quan
+                        </h4>
+                        <div class="total-points-grid" id="total-points-grid">
+                            <!-- Total points will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Partial Points Section -->
+                    <div class="points-section partial-points-section">
+                        <h4 class="points-section-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Điểm Chi Tiết
+                        </h4>
+                        <div class="partial-points-container">
+                            <!-- Physical Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title physical">
+                                    <i class="fas fa-dumbbell"></i>
+                                    Thể Lực
+                                </h5>
+                                <div class="attribute-grid" id="physical-attributes">
+                                    <!-- Physical attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Technical Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title technical">
+                                    <i class="fas fa-futbol"></i>
+                                    Kỹ Thuật
+                                </h5>
+                                <div class="attribute-grid" id="technical-attributes">
+                                    <!-- Technical attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Shooting Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title shooting">
+                                    <i class="fas fa-bullseye"></i>
+                                    Sút Bóng
+                                </h5>
+                                <div class="attribute-grid" id="shooting-attributes">
+                                    <!-- Shooting attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Mental Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title mental">
+                                    <i class="fas fa-brain"></i>
+                                    Tinh Thần
+                                </h5>
+                                <div class="attribute-grid" id="mental-attributes">
+                                    <!-- Mental attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Defensive Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title defensive">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Phòng Thủ
+                                </h5>
+                                <div class="attribute-grid" id="defensive-attributes">
+                                    <!-- Defensive attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Goalkeeper Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title goalkeeper">
+                                    <i class="fas fa-hand-paper"></i>
+                                    Thủ Môn
+                                </h5>
+                                <div class="attribute-grid" id="goalkeeper-attributes">
+                                    <!-- Goalkeeper attributes will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Points Summary -->
+                    <div class="points-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Tổng Điểm Thuộc Tính:</span>
+                            <span class="summary-value" id="total-attributes-sum">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="close-player-points">Đóng</button>
+                <button type="button" class="btn btn-primary admin-only" id="edit-player-points" style="display: none;">
+                    <i class="fas fa-edit"></i> Chỉnh Sửa Điểm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Player Points Modal -->
+    <div id="edit-player-points-modal" class="modal">
+        <div class="modal-content xlarge">
+            <div class="modal-header">
+                <h3 id="edit-player-points-title">Chỉnh Sửa Điểm Số Cầu Thủ</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="edit-player-points-form">
+                    <!-- MVP Count -->
+                    <div class="form-group">
+                        <label for="edit-mvp-count">Số lần MVP</label>
+                        <input type="number" id="edit-mvp-count" min="0" value="0">
+                    </div>
+
+                    <!-- Total Points Section -->
+                    <div class="points-section">
+                        <h4 class="points-section-title">
+                            <i class="fas fa-star"></i>
+                            Điểm Tổng Quan
+                        </h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-main-position">Vị trí chính</label>
+                                <select id="edit-main-position">
+                                    <option value="">Chọn vị trí</option>
+                                    <option value="ST">Tiền đạo (ST)</option>
+                                    <option value="CF">Tiền đạo cắm (CF)</option>
+                                    <option value="LW">Tiền vệ cánh trái (LW)</option>
+                                    <option value="RW">Tiền vệ cánh phải (RW)</option>
+                                    <option value="CAM">Tiền vệ tấn công (CAM)</option>
+                                    <option value="CM">Tiền vệ trung tâm (CM)</option>
+                                    <option value="CDM">Tiền vệ phòng ngự (CDM)</option>
+                                    <option value="LM">Tiền vệ trái (LM)</option>
+                                    <option value="RM">Tiền vệ phải (RM)</option>
+                                    <option value="LWB">Hậu vệ cánh trái (LWB)</option>
+                                    <option value="RWB">Hậu vệ cánh phải (RWB)</option>
+                                    <option value="LB">Hậu vệ trái (LB)</option>
+                                    <option value="RB">Hậu vệ phải (RB)</option>
+                                    <option value="CB">Trung vệ (CB)</option>
+                                    <option value="GK">Thủ môn (GK)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-main-position-rating">Điểm vị trí chính</label>
+                                <input type="number" id="edit-main-position-rating" min="0" max="150" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Partial Points Section -->
+                    <div class="points-section">
+                        <h4 class="points-section-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Điểm Chi Tiết
+                        </h4>
+                        <div class="partial-points-edit-container">
+                            <!-- Physical Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title physical">
+                                    <i class="fas fa-dumbbell"></i>
+                                    Thể Lực
+                                </h5>
+                                <div class="attribute-edit-grid" id="edit-physical-attributes">
+                                    <!-- Physical attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Technical Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title technical">
+                                    <i class="fas fa-futbol"></i>
+                                    Kỹ Thuật
+                                </h5>
+                                <div class="attribute-edit-grid" id="edit-technical-attributes">
+                                    <!-- Technical attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Shooting Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title shooting">
+                                    <i class="fas fa-bullseye"></i>
+                                    Sút Bóng
+                                </h5>
+                                <div class="attribute-edit-grid" id="edit-shooting-attributes">
+                                    <!-- Shooting attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Mental Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title mental">
+                                    <i class="fas fa-brain"></i>
+                                    Tinh Thần
+                                </h5>
+                                <div class="attribute-edit-grid" id="edit-mental-attributes">
+                                    <!-- Mental attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Defensive Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title defensive">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Phòng Thủ
+                                </h5>
+                                <div class="attribute-edit-grid" id="edit-defensive-attributes">
+                                    <!-- Defensive attributes will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Goalkeeper Attributes -->
+                            <div class="attribute-category">
+                                <h5 class="category-title goalkeeper">
+                                    <i class="fas fa-hand-paper"></i>
+                                    Thủ Môn
+                                </h5>
+                                <div class="attribute-edit-grid" id="edit-goalkeeper-attributes">
+                                    <!-- Goalkeeper attributes will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancel-edit-player-points">Hủy</button>
+                <button type="button" class="btn btn-primary" id="save-player-points">
+                    <i class="fas fa-save"></i> Lưu Điểm Số
+                </button>
             </div>
         </div>
     </div>
